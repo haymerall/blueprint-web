@@ -28,7 +28,7 @@ export default function BlueprintViewerModal({ isOpen, onClose, blueprintName, f
           <div className="flex items-center space-x-3">
             <a 
               href={fileUrl} 
-              download 
+              download={blueprintName}
               className="px-3 py-1.5 bg-[#2563EB] hover:bg-blue-600 text-white font-semibold text-xs rounded-lg flex items-center space-x-1.5 transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
@@ -43,13 +43,24 @@ export default function BlueprintViewerModal({ isOpen, onClose, blueprintName, f
           </div>
         </div>
         
-        {/* Native PDF Embed displaying exact uploaded pages */}
-        <div className="flex-1 bg-[#F8FAFC] relative">
-          <iframe 
-            src={`${fileUrl}#toolbar=1&view=FitH`} 
-            className="w-full h-full border-0"
-            title="Blueprint Native PDF Viewer"
-          />
+        {/* Native PDF Object / Embed Display */}
+        <div className="flex-1 bg-[#F8FAFC] relative flex items-center justify-center p-2">
+          <object 
+            data={fileUrl} 
+            type="application/pdf" 
+            className="w-full h-full rounded-xl border border-[#DFE8F5]"
+          >
+            <div className="text-center space-y-3 p-6">
+              <p className="text-xs text-[#17345F] font-semibold">Your browser does not support inline PDF previews.</p>
+              <a 
+                href={fileUrl} 
+                download={blueprintName} 
+                className="inline-block px-4 py-2 bg-[#2563EB] text-white text-xs font-bold rounded-xl"
+              >
+                Download PDF to View
+              </a>
+            </div>
+          </object>
         </div>
       </div>
     </div>
