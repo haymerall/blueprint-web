@@ -62,27 +62,22 @@ export default function BlueprintsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64Data = uploadEvent.target?.result as string;
-      
-      const newBp: BlueprintRecord = {
-        id: Date.now().toString(),
-        name: file.name,
-        projectName: "Active Project - Kenya HQ",
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        sheets: 1,
-        uploadedAt: "Just now",
-        status: "Completed",
-        url: base64Data
-      };
-
-      const updated = [newBp, ...blueprints];
-      setBlueprints(updated);
-      localStorage.setItem("blueprint_ai_records", JSON.stringify(updated));
-      alert(`Successfully uploaded and indexed ${file.name}!`);
+    const fileUrl = URL.createObjectURL(file);
+    const newBp: BlueprintRecord = {
+      id: Date.now().toString(),
+      name: file.name,
+      projectName: "Active Project - Kenya HQ",
+      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+      sheets: 1,
+      uploadedAt: "Just now",
+      status: "Completed",
+      url: fileUrl
     };
-    reader.readAsDataURL(file);
+
+    const updated = [newBp, ...blueprints];
+    setBlueprints(updated);
+    localStorage.setItem("blueprint_ai_records", JSON.stringify(updated));
+    alert(`Successfully uploaded ${file.name}!`);
   };
 
   const handleDelete = (id: string) => {
@@ -184,14 +179,12 @@ export default function BlueprintsPage() {
                         <button
                           onClick={() => { setSelectedBlueprint(bp); setIsViewerOpen(true); }}
                           className="p-1.5 bg-gray-100 hover:bg-gray-200 text-[#17345F] rounded-lg transition-colors cursor-pointer"
-                          title="View PDF"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(bp.id)}
                           className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
-                          title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
