@@ -1,26 +1,46 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
-import { FileText, CheckCircle2, Calculator, Eye, Building2, Upload } from "lucide-react";
+import { FileText, CheckCircle2, Calculator, Eye, Building2, Upload, Sparkles } from "lucide-react";
 import BlueprintViewerModal from "@/components/BlueprintViewerModal";
 
 export default function DashboardPage() {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [activeBlueprint, setActiveBlueprint] = useState<any>(null);
+  const [takeoffCount, setTakeoffCount] = useState(0);
+  const [estimatedCost, setEstimatedCost] = useState(0);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("blueprint_ai_records");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0) setActiveBlueprint(parsed[0]);
+      const savedBlueprints = localStorage.getItem("blueprint_ai_records");
+      if (savedBlueprints) {
+        const parsed = JSON.parse(savedBlueprints);
+        if (parsed.length > 0) {
+          setActiveBlueprint(parsed[0]);
+        }
       }
-    } catch (e) {}
+
+      const savedAnalysis = localStorage.getItem("blueprint_ai_latest_analysis");
+      if (savedAnalysis) {
+        const parsedAnalysis = JSON.parse(savedAnalysis);
+        if (parsedAnalysis.items) {
+          setTakeoffCount(parsedAnalysis.items.length);
+          const subtotal = parsedAnalysis.items.reduce((sum: number, i: any) => sum + (i.quantity * i.rateKES), 0);
+          const contingency = subtotal * 0.10;
+          const vat = (subtotal + contingency) * 0.16;
+          setEstimatedCost(subtotal + contingency + vat);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto pb-12 space-y-6">
+        
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-[#DFE8F5] rounded-2xl p-6 shadow-xs relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center space-x-2 text-xs text-[#647A9B] mb-2 font-medium">
@@ -33,27 +53,37 @@ export default function DashboardPage() {
               <span>Project Overview & Live Intelligence</span>
             </h1>
             <p className="text-xs text-[#647A9B] mt-1">
-              {activeBlueprint ? `Active project: ${activeBlueprint.projectName}` : "No active project uploaded. Upload a blueprint to begin."}
+              {activeBlueprint ? `Active file: ${activeBlueprint.name}` : "No active project uploaded. Upload a blueprint to begin."}
             </p>
           </div>
 
-          {activeBlueprint && (
-            <button 
-              onClick={() => setIsViewerOpen(true)}
-              className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer z-10"
+          <div className="flex items-center space-x-3 z-10">
+            <a 
+              href="/blueprints"
+              className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer"
             >
-              <Eye className="w-4 h-4" />
-              <span>Open Live Blueprint Preview</span>
-            </button>
-          )}
+              <Upload className="w-4 h-4" />
+              <span>Manage Blueprints</span>
+            </a>
+            {activeBlueprint && (
+              <button 
+                onClick={() => setIsViewerOpen(true)}
+                className="py-2.5 px-4 bg-white border border-[#DFE8F5] hover:bg-[#F8FAFC] text-[#17345F] font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer"
+              >
+                <Eye className="w-4 h-4 text-[#2563EB]" />
+                <span>Preview PDF</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Metrics */}
+        {/* Real-Time Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white border border-[#DFE8F5] rounded-2xl p-5 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-xs text-[#647A9B] font-medium">Total Projects</p>
-              <p className="text-2xl font-bold text-[#17345F]">0</p>
+              <p className="text-2xl font-bold text-[#17345F]">{activeBlueprint ? "1" : "0"}</p>
+              <p className="text-[10px] text-[#10B981] font-semibold">Active session</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#F4F8FF] border border-[#DFE8F5] flex items-center justify-center text-[#2563EB]">
               <Building2 className="w-5 h-5" />
@@ -63,7 +93,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#DFE8F5] rounded-2xl p-5 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-xs text-[#647A9B] font-medium">Uploaded Blueprints</p>
-              <p className="text-2xl font-bold text-[#17345F]">0 Sheets</p>
+              <p className="text-2xl font-bold text-[#17345F]">{activeBlueprint ? `${activeBlueprint.sheets} Sheets` : "0 Sheets"}</p>
+              <p className="text-[10px] text-[#2563EB] font-semibold">{activeBlueprint ? activeBlueprint.size : "No file"}</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-[#F4F8FF] border border-[#DFE8F5] flex items-center justify-center text-[#2563EB]">
               <FileText className="w-5 h-5" />
@@ -73,7 +104,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#DFE8F5] rounded-2xl p-5 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-xs text-[#647A9B] font-medium">Takeoff Items</p>
-              <p className="text-2xl font-bold text-[#17345F]">0 SMM2</p>
+              <p className="text-2xl font-bold text-[#17345F]">{takeoffCount} SMM2</p>
+              <p className="text-[10px] text-[#10B981] font-semibold">Gemini parsed</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#10B981]">
               <CheckCircle2 className="w-5 h-5" />
@@ -83,7 +115,8 @@ export default function DashboardPage() {
           <div className="bg-white border border-[#DFE8F5] rounded-2xl p-5 shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <p className="text-xs text-[#647A9B] font-medium">Estimated Cost</p>
-              <p className="text-xl font-bold text-[#17345F]">KES 0</p>
+              <p className="text-xl font-bold text-[#17345F]">KES {estimatedCost > 0 ? estimatedCost.toLocaleString() : "0"}</p>
+              <p className="text-[10px] text-[#2563EB] font-semibold">Includes VAT & Contingency</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-[#2563EB]">
               <Calculator className="w-5 h-5" />
@@ -100,7 +133,15 @@ export default function DashboardPage() {
                   <FileText className="w-4 h-4 text-[#2563EB]" />
                   <span>Live Blueprint Sheet Preview: {activeBlueprint.name}</span>
                 </h3>
+                <p className="text-xs text-[#647A9B] mt-0.5">Rendering actual vector PDF pages from your uploaded project storage.</p>
               </div>
+              <button
+                onClick={() => setIsViewerOpen(true)}
+                className="px-3 py-1.5 bg-[#2563EB]/10 hover:bg-[#2563EB] hover:text-white text-[#2563EB] font-semibold text-xs rounded-lg transition-all cursor-pointer flex items-center space-x-1"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Expand Fullscreen</span>
+              </button>
             </div>
             <div className="w-full h-[450px] bg-[#F8FAFC] border border-[#DFE8F5] rounded-xl overflow-hidden relative">
               <iframe src={`${activeBlueprint.url}#toolbar=0&view=FitH`} className="w-full h-full border-0" title="Preview" />
@@ -115,7 +156,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-[#17345F]">Get Started with Blueprint AI</h3>
               <p className="text-xs text-[#647A9B]">Upload your architectural PDF drawings on the Blueprints page to initialize intelligent estimation.</p>
             </div>
-            <a href="/blueprints" className="inline-block py-2.5 px-5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition-all">
+            <a href="/blueprints" className="inline-block py-2.5 px-5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer">
               Go to Blueprints & Upload
             </a>
           </div>
