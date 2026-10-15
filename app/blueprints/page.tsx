@@ -23,20 +23,20 @@ export default function BlueprintsPage() {
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only load if explicitly populated, or start clean
-    const saved = localStorage.getItem("blueprint_ai_records");
+    // Load from sessionStorage instead of localStorage to prevent quota limits with large PDFs
+    const saved = sessionStorage.getItem("blueprint_ai_records_session");
     if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        setBlueprints(parsed); 
-      } catch (e) {}
+      try { setBlueprints(JSON.parse(saved)); } catch (e) {}
     }
   }, []);
 
-  const handleClearAll = () => {
-    localStorage.removeItem("blueprint_ai_records");
-    localStorage.removeItem("blueprint_ai_latest_analysis");
-    setBlueprints([]);
+  const saveBlueprints = (records: BlueprintRecord[]) => {
+    setBlueprints(records);
+    try {
+      sessionStorage.setItem("blueprint_ai_records_session", JSON.stringify(records));
+    } catch (e) {
+      console.warn("Storage quota warning for large PDF");
+    }
   };
 
   const handleRunAI = async (bp: BlueprintRecord) => {
@@ -72,6 +72,7 @@ export default function BlueprintsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Use reliable object URL for immediate local viewing
     const fileUrl = URL.createObjectURL(file);
     const newBp: BlueprintRecord = {
       id: Date.now().toString(),
@@ -85,18 +86,22 @@ export default function BlueprintsPage() {
     };
 
     const updated = [newBp, ...blueprints];
-    setBlueprints(updated);
-    localStorage.setItem("blueprint_ai_records", JSON.stringify(updated));
-    alert(`Successfully uploaded ${file.name}!`);
+    saveBlueprints(updated);
+    alert(`Successfully uploaded and indexed ${file.name}!`);
   };
 
   const handleDelete = (id: string) => {
     const updated = blueprints.filter(b => b.id !== id);
-    setBlueprints(updated);
-    localStorage.setItem("blueprint_ai_records", JSON.stringify(updated));
+    saveBlueprints(updated);
     if (updated.length === 0) {
       localStorage.removeItem("blueprint_ai_latest_analysis");
     }
+  };
+
+  const handleClearAll = () => {
+    sessionStorage.removeItem("blueprint_ai_records_session");
+    localStorage.removeItem("blueprint_ai_latest_analysis");
+    setBlueprints([]);
   };
 
   return (
@@ -122,7 +127,7 @@ export default function BlueprintsPage() {
                 onClick={handleClearAll}
                 className="py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs rounded-xl transition-all cursor-pointer"
               >
-                Clear All Uploads
+                Clear Uploads
               </button>
             )}
             <label className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer">
