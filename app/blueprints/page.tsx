@@ -23,11 +23,21 @@ export default function BlueprintsPage() {
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only load if explicitly populated, or start clean
     const saved = localStorage.getItem("blueprint_ai_records");
     if (saved) {
-      try { setBlueprints(JSON.parse(saved)); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved);
+        setBlueprints(parsed); 
+      } catch (e) {}
     }
   }, []);
+
+  const handleClearAll = () => {
+    localStorage.removeItem("blueprint_ai_records");
+    localStorage.removeItem("blueprint_ai_latest_analysis");
+    setBlueprints([]);
+  };
 
   const handleRunAI = async (bp: BlueprintRecord) => {
     setIsAnalyzing(true);
@@ -84,7 +94,9 @@ export default function BlueprintsPage() {
     const updated = blueprints.filter(b => b.id !== id);
     setBlueprints(updated);
     localStorage.setItem("blueprint_ai_records", JSON.stringify(updated));
-    localStorage.removeItem("blueprint_ai_latest_analysis");
+    if (updated.length === 0) {
+      localStorage.removeItem("blueprint_ai_latest_analysis");
+    }
   };
 
   return (
@@ -104,11 +116,21 @@ export default function BlueprintsPage() {
             <p className="text-xs text-[#647A9B] mt-1">Upload architectural PDFs to execute Gemini Vision SMM2 element extraction.</p>
           </div>
           
-          <label className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer">
-            <Upload className="w-4 h-4" />
-            <span>Upload Blueprint PDF</span>
-            <input type="file" accept="application/pdf" onChange={handleFileUpload} className="hidden" />
-          </label>
+          <div className="flex items-center space-x-3">
+            {blueprints.length > 0 && (
+              <button 
+                onClick={handleClearAll}
+                className="py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Clear All Uploads
+              </button>
+            )}
+            <label className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer">
+              <Upload className="w-4 h-4" />
+              <span>Upload Blueprint PDF</span>
+              <input type="file" accept="application/pdf" onChange={handleFileUpload} className="hidden" />
+            </label>
+          </div>
         </div>
 
         {isAnalyzing && (
