@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
-import { FileText, Upload, CheckCircle2, AlertCircle, Eye, Trash2, Sparkles, RefreshCw } from "lucide-react";
+import { FileText, Upload, Eye, Trash2, Sparkles, RefreshCw } from "lucide-react";
 import BlueprintViewerModal from "@/components/BlueprintViewerModal";
 
 interface BlueprintRecord {
@@ -23,10 +23,13 @@ export default function BlueprintsPage() {
   const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load from sessionStorage instead of localStorage to prevent quota limits with large PDFs
+    // Strictly load only user-uploaded session records. NO fallback sample data.
     const saved = sessionStorage.getItem("blueprint_ai_records_session");
     if (saved) {
-      try { setBlueprints(JSON.parse(saved)); } catch (e) {}
+      try { 
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setBlueprints(parsed);
+      } catch (e) {}
     }
   }, []);
 
@@ -44,11 +47,11 @@ export default function BlueprintsPage() {
     setAnalysisStatus(`Initializing Gemini Vision analysis for ${bp.name}...`);
 
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      setAnalysisStatus("Detecting architectural elements & calculating dimensions (>0.5 m² deductions)...");
-      await new Promise(r => setTimeout(r, 1500));
-      setAnalysisStatus("Generating KES localized BoQ and SMM2 takeoff items...");
       await new Promise(r => setTimeout(r, 1000));
+      setAnalysisStatus("Detecting architectural elements & calculating dimensions (>0.5 m² deductions)...");
+      await new Promise(r => setTimeout(r, 1200));
+      setAnalysisStatus("Generating KES localized BoQ and SMM2 takeoff items...");
+      await new Promise(r => setTimeout(r, 800));
 
       const analysisPayload = {
         meta: { fileName: bp.name, projectName: bp.projectName, timestamp: new Date().toISOString() },
@@ -72,12 +75,11 @@ export default function BlueprintsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Use reliable object URL for immediate local viewing
     const fileUrl = URL.createObjectURL(file);
     const newBp: BlueprintRecord = {
       id: Date.now().toString(),
       name: file.name,
-      projectName: "Active Project - Kenya HQ",
+      projectName: `Project - ${file.name.replace(/\.[^/.]+$/, "")}`,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
       sheets: 1,
       uploadedAt: "Just now",
@@ -94,6 +96,7 @@ export default function BlueprintsPage() {
     const updated = blueprints.filter(b => b.id !== id);
     saveBlueprints(updated);
     if (updated.length === 0) {
+      sessionStorage.removeItem("blueprint_ai_records_session");
       localStorage.removeItem("blueprint_ai_latest_analysis");
     }
   };
@@ -118,7 +121,7 @@ export default function BlueprintsPage() {
               <FileText className="w-6 h-6 text-[#2563EB]" />
               <span>Blueprint Management & Gemini AI</span>
             </h1>
-            <p className="text-xs text-[#647A9B] mt-1">Upload architectural PDFs to execute Gemini Vision SMM2 element extraction.</p>
+            <p className="text-xs text-[#647A9B] mt-1">Upload multiple architectural PDFs to accumulate projects and execute Gemini Vision SMM2 extraction.</p>
           </div>
           
           <div className="flex items-center space-x-3">
@@ -127,7 +130,7 @@ export default function BlueprintsPage() {
                 onClick={handleClearAll}
                 className="py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs rounded-xl transition-all cursor-pointer"
               >
-                Clear Uploads
+                Clear All Projects
               </button>
             )}
             <label className="py-2.5 px-4 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-xs rounded-xl flex items-center space-x-2 shadow-sm transition-all cursor-pointer">
