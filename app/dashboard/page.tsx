@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
-import { FileText, Upload, Calculator, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileText, Upload, Calculator, ArrowRight, ShieldCheck, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const [hasData, setHasData] = useState(false);
   const [projectName, setProjectName] = useState("No Active Project");
   const [fileName, setFileName] = useState("No blueprint uploaded");
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [sheetsCount, setSheetsCount] = useState(0);
   const [takeoffCount, setTakeoffCount] = useState(0);
   const [estimatedCost, setEstimatedCost] = useState(0);
@@ -34,6 +35,7 @@ export default function DashboardPage() {
           setProjectName(latest.projectName);
           setFileName(latest.name);
           setSheetsCount(latest.sheets);
+          if (latest.url) setFileUrl(latest.url);
         }
       } catch (e) {}
     }
@@ -127,7 +129,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Conditional Preview Section */}
+        {/* Live Interactive PDF Viewer Section */}
         {!hasData ? (
           <div className="bg-white border border-[#DFE8F5] rounded-2xl p-16 text-center space-y-4 shadow-xs">
             <div className="w-12 h-12 bg-[#F4F8FF] border border-[#DFE8F5] rounded-2xl flex items-center justify-center text-[#2563EB] mx-auto">
@@ -150,7 +152,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#17345F] flex items-center space-x-2">
                 <FileText className="w-4 h-4 text-[#2563EB]" />
-                <span>Live Blueprint Sheet Preview: {fileName}</span>
+                <span>Live Blueprint Sheet Preview: {fileName} ({sheetsCount} Sheets)</span>
               </h3>
               <button
                 onClick={() => router.push("/quantity-takeoff")}
@@ -160,11 +162,22 @@ export default function DashboardPage() {
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="w-full h-96 bg-[#F8FAFC] border border-[#DFE8F5] rounded-xl flex flex-col items-center justify-center text-center p-6 space-y-2">
-              <FileText className="w-10 h-10 text-[#2563EB]/40" />
-              <p className="text-xs font-semibold text-[#17345F]">Project {projectName} indexed successfully</p>
-              <p className="text-[11px] text-[#647A9B] max-w-md">All {sheetsCount} sheets are indexed and ready for Gemini Vision SMM2 takeoff analysis.</p>
-            </div>
+            
+            {fileUrl ? (
+              <div className="w-full h-[600px] border border-[#DFE8F5] rounded-xl overflow-hidden shadow-inner bg-gray-100">
+                <iframe
+                  src={`${fileUrl}#toolbar=1&navpanes=1`}
+                  className="w-full h-full border-none"
+                  title="Blueprint PDF Preview"
+                />
+              </div>
+            ) : (
+              <div className="w-full h-96 bg-[#F8FAFC] border border-[#DFE8F5] rounded-xl flex flex-col items-center justify-center text-center p-6 space-y-2">
+                <FileText className="w-10 h-10 text-[#2563EB]/40" />
+                <p className="text-xs font-semibold text-[#17345F]">Project {projectName} indexed successfully</p>
+                <p className="text-[11px] text-[#647A9B] max-w-md">All {sheetsCount} sheets are indexed and ready for Gemini Vision SMM2 takeoff analysis.</p>
+              </div>
+            )}
           </div>
         )}
 
